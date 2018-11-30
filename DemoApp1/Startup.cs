@@ -23,6 +23,9 @@ namespace DemoApp1
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
+            services.AddSession(options => {
+                options.IdleTimeout = TimeSpan.FromSeconds(3600);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -39,6 +42,7 @@ namespace DemoApp1
             }
 
             app.UseStaticFiles();
+            app.UseSession();
             app.UseJwtMiddleware();
 
             app.UseMvc(routes =>

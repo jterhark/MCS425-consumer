@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using Microsoft.IdentityModel.Tokens;
 
 namespace DemoApp1.Middleware
@@ -22,9 +23,14 @@ namespace DemoApp1.Middleware
         }
 
         public Task Invoke(HttpContext httpContext) {
-            if (!httpContext.Request.Cookies.TryGetValue("site1url", out var tok)) {
-                httpContext.Response.Redirect("https://mcs425-jterhark.azurewebsites.net/Account/Login?msg=cookienotfound");
-                return Task.CompletedTask;
+            string tok = httpContext.Request.Query["token"].ToString();
+
+            if (string.IsNullOrEmpty(tok)) {
+                if (!httpContext.Request.Cookies.TryGetValue("site1url", out tok)) {
+                    httpContext.Response.Redirect(
+                        "https://mcs425-jterhark.azurewebsites.net/Account/Login?msg=cookienotfound");
+                    return Task.CompletedTask;
+                }
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("WOl3brI9HCoHGPsbhrAoe5XhAv7wCKqOPNrQoI9DLkLuYEEt276C3IGojXR5qnsX"));
@@ -36,23 +42,33 @@ namespace DemoApp1.Middleware
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
                 ValidateAudience = true,
-                ValidAudience = "azurewebsites.net",
+                //ValidAudience = "localhost",
+                ValidAudience = "mcs425-app1.azurewebsites.net",
                 ValidateIssuer = true,
-                ValidIssuer = "mcs425-jterhark.azurewebsites.net"
+                ValidIssuer = "mcs425-jterhark.azurewebsites.net",
+                //ValidIssuer = "localhost"
             };
 
             try {
                 var result = new JwtSecurityTokenHandler().ValidateToken(tok, options, out var tmp);
+                var s = result.Claims.FirstOrDefault(x => x.Type=="name")?.Value;
+                if (!string.IsNullOrEmpty(s)) {
+                    httpContext.Session.SetString("name", s);
+                }
             }
             catch (SecurityTokenValidationException s) {
-                httpContext.Response.Redirect(
-                    "https://mcs425-jterhark.azurewebsites.net/Account/Login?msg=" + s.Message.ToString());
+                httpContext.Response.Redirect(new Uri(
+                    "https://mcs425-jterhark.azurewebsites.net/Account/Login?msg=" + s.Message.ToString()).AbsoluteUri);
+                return Task.CompletedTask;
             }
             catch (ArgumentException) {
                 httpContext.Response.Redirect(
                     "https://mcs425-jterhark.azurewebsites.net/Account/Login?msg=malformedtoken");
+                return Task.CompletedTask;
             }
 
+
+            
             return _next(httpContext);
         }
     }

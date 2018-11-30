@@ -10,8 +10,13 @@ namespace DemoApp1.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
-        {
+        public IActionResult Index() {
+//            HttpContext.Request.Query.TryGetValue("token", out var tok);
+//            if (tok.Count>0) {
+//                var token = tok.ToString();
+//                Response.Cookies.Append("siteurl1", token);
+//            }
+
             return View();
         }
 

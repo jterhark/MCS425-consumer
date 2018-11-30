@@ -3,6 +3,12 @@
 }
 
 
-<div class="row">
-    Hello!
+
+<div class="container">
+     @if(Context.Session.TryGetValue("name", out var name)){
+         <h1>Hello @System.Text.Encoding.ASCII.GetString(name)</h1>
+     }
+     else {
+         <h1>Hello</h1>
+     }
 </div>
